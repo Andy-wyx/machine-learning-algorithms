@@ -1,0 +1,11 @@
+
+
+-----Start Afresh-----
+2023-07-07 09:48:44UTC——2023-07-07 09:48:48UTC
+Epoches: 10, AvgSteps: 29, success rate: 40.00%
+2023-07-07 09:49:27UTC——2023-07-07 09:49:28UTC
+Epoches: 10, AvgSteps: 10, success rate: 80.00%
+2023-07-07 09:51:18UTC——2023-07-07 09:51:30UTC
+Epoches: 10, AvgSteps: 7, success rate: 90.00%
+2023-07-10 01:13:00UTC——2023-07-10 01:13:12UTC
+Epoches: 10, AvgSteps: 6, success rate: 100.00%
