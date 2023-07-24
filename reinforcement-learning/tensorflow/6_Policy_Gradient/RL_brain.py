@@ -43,9 +43,9 @@ class PolicyGradient:
 
     def _build_net(self):
         with tf.name_scope('inputs'):
-            self.tf_obs = tf.placeholder(tf.float32, [None, self.n_features], name="observations")
-            self.tf_acts = tf.placeholder(tf.int32, [None, ], name="actions_num")
-            self.tf_vt = tf.placeholder(tf.float32, [None, ], name="actions_value")  # Q value
+            self.tf_obs = tf.placeholder(tf.float32, [None, self.n_features], name="observations") # 接收 observation
+            self.tf_acts = tf.placeholder(tf.int32, [None, ], name="actions_num") # 接收我们在这个回合中选过的 actions
+            self.tf_vt = tf.placeholder(tf.float32, [None, ], name="actions_value")  # discounted_ep_rs_norm,用来估计Q value
         #seems more concise than _build_net function in DQN, due to the use of keras
         # fc1   type:tensor
         layer = tf.layers.dense(

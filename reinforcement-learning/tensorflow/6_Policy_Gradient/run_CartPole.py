@@ -61,7 +61,7 @@ for i_episode in range(3000):
 
             vt = RL.learn() #和之前算法不同，现在是回合更新：一回合只学一次
 
-            if i_episode == 0:
+            if i_episode == 1000:
                 plt.plot(vt)    # plot the episode vt
                 plt.xlabel('episode steps')
                 plt.ylabel('normalized state-action value')
