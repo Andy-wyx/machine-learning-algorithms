@@ -16,3 +16,5 @@ Epoches: 10, AvgSteps: 149, success rate: 0.00%
 Epoches: 10, AvgSteps: 323, success rate: 50.00%
 2023-07-10 09:35:37UTC——2023-07-10 09:36:10UTC
 Epoches: 10, AvgSteps: 50, success rate: 100.00%
+2023-07-20 05:07:34UTC——2023-07-20 05:07:42UTC
+Epoches: 10, AvgSteps: 6, success rate: 80.00%

@@ -3,8 +3,6 @@ Policy Gradient, Reinforcement Learning.
 
 The cart pole example
 
-View more on my tutorial page: https://morvanzhou.github.io/tutorials/
-
 Using:
 Tensorflow: 1.0
 gym: 0.8.0
@@ -13,6 +11,7 @@ gym: 0.8.0
 import gym
 from RL_brain import PolicyGradient
 import matplotlib.pyplot as plt
+import os
 
 DISPLAY_REWARD_THRESHOLD = -2000  # renders environment if total episode reward is greater then this threshold
 # episode: 154   reward: -10667
@@ -20,10 +19,10 @@ DISPLAY_REWARD_THRESHOLD = -2000  # renders environment if total episode reward 
 # episode: 489   reward: -1006
 # episode: 628   reward: -502
 
-RENDER = False  # rendering wastes time
+RENDER = True  # rendering wastes time
 
 env = gym.make('MountainCar-v0')
-env.seed(1)     # reproducible, general Policy gradient has high variance
+#env.seed(1)     # reproducible, general Policy gradient has high variance
 env = env.unwrapped
 
 print(env.action_space)
@@ -69,6 +68,8 @@ for i_episode in range(1000):
                 plt.plot(vt)  # plot the episode vt
                 plt.xlabel('episode steps')
                 plt.ylabel('normalized state-action value')
+                dirname=os.path.dirname(__file__)
+                plt.savefig(dirname+'/MountainCar_output.png')
                 plt.show()
 
             break

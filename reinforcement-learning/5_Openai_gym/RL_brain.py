@@ -3,7 +3,6 @@ This part of code is the DQN brain, which is a brain of the agent.
 All decisions are made in here.
 Using Tensorflow to build the neural network.
 
-View more on my tutorial page: https://morvanzhou.github.io/tutorials/
 
 Using:
 Tensorflow: 1.0
@@ -15,6 +14,8 @@ import pandas as pd
 #import tensorflow as tf
 import tensorflow.compat.v1 as tf 
 tf.disable_v2_behavior() 
+
+import os
 
 # Deep Q Network off-policy
 class DeepQNetwork:
@@ -203,7 +204,8 @@ class DeepQNetwork:
         plt.plot(np.arange(len(self.cost_his)), self.cost_his)
         plt.ylabel('Cost')
         plt.xlabel('training steps')
-        plt.savefig(filename+'.png')
+        dirname=os.path.dirname(__file__)
+        plt.savefig(dirname+'/'+filename+'.png')
         plt.show()
         
 

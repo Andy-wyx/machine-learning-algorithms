@@ -1,8 +1,6 @@
 """
 Dueling DQN & Natural DQN comparison
 
-View more on my tutorial page: https://morvanzhou.github.io/tutorials/
-
 Using:
 Tensorflow: 1.0
 gym: 0.8.0
@@ -13,6 +11,7 @@ import gym
 from RL_brain import DuelingDQN
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 #import tensorflow as tf
 import tensorflow.compat.v1 as tf
 tf.disable_v2_behavior()
@@ -83,6 +82,7 @@ plt.legend(loc='best')
 plt.ylabel('accumulated reward')
 plt.xlabel('training steps')
 plt.grid()
-plt.savefig('output.png')
+dirname=os.path.dirname(__file__)
+plt.savefig(dirname+'/output.png')
 plt.show()
 
