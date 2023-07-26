@@ -19,6 +19,7 @@ tf.disable_v2_behavior()
 import numpy as np
 import matplotlib.pyplot as plt
 import gym, threading, queue
+import os
 
 EP_MAX = 1000
 EP_LEN = 500
@@ -188,7 +189,10 @@ if __name__ == '__main__':
 
     # plot reward change and test
     plt.plot(np.arange(len(GLOBAL_RUNNING_R)), GLOBAL_RUNNING_R)
-    plt.xlabel('Episode'); plt.ylabel('Moving reward'); plt.ion(); plt.show()
+    plt.xlabel('Episode'); plt.ylabel('Moving reward'); plt.ion(); 
+    dirname=os.path.dirname(__file__)
+    plt.savefig(dirname+'/reward_discrete_PPO.png')
+    plt.show()
     env = gym.make('CartPole-v0')
     while True:
         s = env.reset()

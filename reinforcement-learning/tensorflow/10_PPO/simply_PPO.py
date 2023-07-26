@@ -17,6 +17,7 @@ tf.disable_v2_behavior()
 import numpy as np
 import matplotlib.pyplot as plt
 import gym
+import os
 
 EP_MAX = 1000
 EP_LEN = 200
@@ -81,11 +82,11 @@ class PPO(object):
         self.sess.run(tf.global_variables_initializer())
 
     def update(self, s, a, r):
-        self.sess.run(self.update_oldpi_op)
+        self.sess.run(self.update_oldpi_op) #更新old pi
         adv = self.sess.run(self.advantage, {self.tfs: s, self.tfdc_r: r})
         # adv = (adv - adv.mean())/(adv.std()+1e-6)     # sometimes helpful
 
-        # update actor
+        # update actor KLPEN和CLIP两种更新方式不太一样
         if METHOD['name'] == 'kl_pen':
             for _ in range(A_UPDATE_STEPS):
                 _, kl = self.sess.run(
@@ -101,7 +102,7 @@ class PPO(object):
         else:   # clipping method, find this is better (OpenAI's paper)
             [self.sess.run(self.atrain_op, {self.tfs: s, self.tfa: a, self.tfadv: adv}) for _ in range(A_UPDATE_STEPS)]
 
-        # update critic
+        # update critic 这里是一样的
         [self.sess.run(self.ctrain_op, {self.tfs: s, self.tfdc_r: r}) for _ in range(C_UPDATE_STEPS)]
 
     def _build_anet(self, name, trainable):
@@ -164,4 +165,8 @@ for ep in range(EP_MAX):
     )
 
 plt.plot(np.arange(len(all_ep_r)), all_ep_r)
-plt.xlabel('Episode');plt.ylabel('Moving averaged episode reward');plt.show()
+plt.xlabel('Episode')
+plt.ylabel('Moving averaged episode reward')
+dirname=os.path.dirname(__file__)
+plt.savefig(dirname+'/reward_simple_PPO.png')
+plt.show()
