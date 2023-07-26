@@ -39,7 +39,7 @@ class PPO(object):
         self.sess = tf.Session()
         self.tfs = tf.placeholder(tf.float32, [None, S_DIM], 'state')
 
-        # critic
+        # critic #only state as input
         with tf.variable_scope('critic'):
             l1 = tf.layers.dense(self.tfs, 100, tf.nn.relu)
             self.v = tf.layers.dense(l1, 1)
@@ -63,12 +63,12 @@ class PPO(object):
                 # ratio = tf.exp(pi.log_prob(self.tfa) - oldpi.log_prob(self.tfa))
                 ratio = pi.prob(self.tfa) / (oldpi.prob(self.tfa) + 1e-5)
                 surr = ratio * self.tfadv
-            if METHOD['name'] == 'kl_pen':
+            if METHOD['name'] == 'kl_pen': # use KL penalty
                 self.tflam = tf.placeholder(tf.float32, None, 'lambda')
                 kl = tf.distributions.kl_divergence(oldpi, pi)
                 self.kl_mean = tf.reduce_mean(kl)
                 self.aloss = -(tf.reduce_mean(surr - self.tflam * kl))
-            else:   # clipping method, find this is better
+            else:   # clipped surrogate objective . clipping method, find this is better
                 self.aloss = -tf.reduce_mean(tf.minimum(
                     surr,
                     tf.clip_by_value(ratio, 1.-METHOD['epsilon'], 1.+METHOD['epsilon'])*self.tfadv))
@@ -140,6 +140,9 @@ for ep in range(EP_MAX):
         s = s_
         ep_r += r
 
+        #总结一下从AC->DDPG->A3C->PPO代码中的c_loss定义有什么差别：
+        #1. AC 和DDPG都是典型的TD error, r+Gamma* Q'-Q,（不过AC中用的是state value）  依据是V=Sigma pi*Q,求V关于theta的梯度后仍然需要我们有对Q的估计
+        #2.A3C和PPO中都是Advantage，即critic network只有s一个输入，critic是模拟的state value function。 loss=discounted reward - V。 依据是A=Q-V.不过为什么要用A呢，它比Q好吗
         # update ppo
         if (t+1) % BATCH == 0 or t == EP_LEN-1:
             v_s_ = ppo.get_v(s_)
