@@ -84,7 +84,7 @@ class Actor(object):
         return np.random.choice(np.arange(probs.shape[1]), p=probs.ravel())   # return a int
 
 
-class Critic(object): ##这个网络只有s一个输入，感觉不是特别合理，DDPG重的ACnet看起来符合正常思路
+class Critic(object):
     def __init__(self, sess, n_features, lr=0.01):
         self.sess = sess
 

@@ -85,7 +85,7 @@ class PolicyGradient:
             neg_log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=all_act, labels=self.tf_acts)   # this is negative log of chosen action
             # or in this way:
             # neg_log_prob = tf.reduce_sum(-tf.log(self.all_act_prob)*tf.one_hot(self.tf_acts, self.n_actions), axis=1)
-            loss = tf.reduce_mean(neg_log_prob * self.tf_vt)  # reward guided loss 
+            loss = tf.reduce_mean(neg_log_prob * self.tf_vt)  # reward guided loss
         ##
         with tf.name_scope('train'):     
             # minimize method internally includes compute_gradients() and apply_gradients()
@@ -110,7 +110,7 @@ class PolicyGradient:
     #好奇是哪里自动算梯度的？: self.train_op是_build_net中定义好的optimizer
     def learn(self):
         # discount and normalize episode reward
-        discounted_ep_rs_norm = self._discount_and_norm_rewards() # 这拿到的是一个list
+        discounted_ep_rs_norm = self._discount_and_norm_rewards()
 
         # train on episode
         self.sess.run(self.train_op, feed_dict={
@@ -132,9 +132,7 @@ class PolicyGradient:
             running_add = running_add * self.gamma + self.ep_rs[t]
             discounted_ep_rs[t] = running_add
 
-        #len=N [0,1,2,3,4,5,N-1],reversed:[N-1,N-2,...,2,1], d[N-1]=rN-1, d[N-2]=rN-2+rN-1*Gamma, d[N-3]=rN-3+rN-2*Gamma+rN-3*Gamma^2,...
         # normalize episode rewards
-        
         discounted_ep_rs -= np.mean(discounted_ep_rs)
         discounted_ep_rs /= np.std(discounted_ep_rs)
         return discounted_ep_rs
