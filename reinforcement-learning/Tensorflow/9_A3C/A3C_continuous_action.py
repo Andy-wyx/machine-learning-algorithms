@@ -64,7 +64,7 @@ class ACNet(object):
 
                 # 接着计算 critic loss 和 actor loss
                 # 用这两个 loss 计算要推送的 gradients
-                td = tf.subtract(self.v_target, self.v, name='TD_error')
+                td = tf.subtract(self.v_target, self.v, name='TD_error') ##这个loss，所谓的TDerror好像和advantage是一回事儿，用的是discounted reward- V
                 with tf.name_scope('c_loss'):
                     self.c_loss = tf.reduce_mean(tf.square(td))
 

@@ -115,7 +115,7 @@ class Critic(object): ##这个网络只有s一个输入，感觉不是特别合�
 
         with tf.variable_scope('squared_TD_error'):
             self.td_error = self.r + GAMMA * self.v_ - self.v
-            self.loss = tf.square(self.td_error)    # TD_error = (r+gamma*V_next) - V_eval
+            self.loss = tf.square(self.td_error)    # TD_error = (r+gamma*V_next) - V_eval #的确是一个典型的TD error不过貌似将critic改成Qnetwork更合理一点
         with tf.variable_scope('train'):
             self.train_op = tf.train.AdamOptimizer(lr).minimize(self.loss)
 
