@@ -215,8 +215,9 @@ sess = tf.Session()
 # Create actor and critic.
 # They are actually connected to each other, details can be seen in tensorboard or in this picture:
 actor = Actor(sess, action_dim, action_bound, LR_A, REPLACEMENT)
-critic = Critic(sess, state_dim, action_dim, LR_C, GAMMA, REPLACEMENT, actor.a, actor.a_)
-actor.add_grad_to_graph(critic.a_grads)
+critic = Critic(sess, state_dim, action_dim, LR_C, GAMMA, REPLACEMENT, actor.a, actor.a_)#将 actor 同它的 eval_net/target_net 产生的 a/a_ 传给 Critic
+actor.add_grad_to_graph(critic.a_grads) # 将 critic 产出的 dQ/da 加入到 Actor 的 Graph 中去
+
 
 sess.run(tf.global_variables_initializer())
 
