@@ -7,7 +7,7 @@ import numpy as np
 
 
 ######################################## Hyper Parameters ###########################################
-MAX_EPISODES=150
+MAX_EPISODES=400
 MAX_EP_STEPS=3000
 BATCH_SIZE = 32
 LR = 0.01                   # learning rate
@@ -20,11 +20,12 @@ MEMORY_CAPACITY = 2000
 env = gym.make('CartPole-v0')
 env = env.unwrapped
 N_ACTIONS = env.action_space.n
-N_STATES = env.observation_space.shape[0]
+N_FEATURES = env.observation_space.shape[0]
 ENV_A_SHAPE = 0 if isinstance(env.action_space.sample(), int) else env.action_space.sample().shape     # to confirm the shape
 
 ######################################################################################################
 # Get cpu, gpu or mps device for training.
+'''
 device = (
     "cuda"
     if torch.cuda.is_available()
@@ -33,6 +34,8 @@ device = (
     else "cpu"
 )
 print(f"Using {device} device")
+'''
+device="cpu"
 
 ########################################## run CartPole-V0 ###########################################
 def run_CartPoleV0():
@@ -79,7 +82,7 @@ def run_CartPoleV0():
     dqn.plot(dirname)
 
 if __name__ == '__main__':
-	dqn = DQN(N_STATES, N_ACTIONS, MEMORY_CAPACITY,
+	dqn = DQN(N_FEATURES, N_ACTIONS, MEMORY_CAPACITY,
             EPSILON, EPSILON_INCR, EPSILON_MAX,
             ENV_A_SHAPE, TARGET_REPLACE_ITER, BATCH_SIZE, 
             GAMMA, LR, device)

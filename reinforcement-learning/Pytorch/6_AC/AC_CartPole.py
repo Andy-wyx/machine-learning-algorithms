@@ -75,6 +75,7 @@ class Actor(object):
 		self.optimizer.zero_grad()
 		loss.backward(retain_graph=True)
 		self.optimizer.step()
+		
 
 		return exp_v
 
@@ -101,6 +102,7 @@ class Critic(object):
 		self.optimizer.zero_grad()
 		loss.backward(retain_graph=True)
 		self.optimizer.step()
+
 
 		return td_error
 

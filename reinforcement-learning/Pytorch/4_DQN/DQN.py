@@ -8,18 +8,18 @@ import matplotlib.pyplot as plt
 class Net(nn.Module): #nn.Module: Base class for all neural network modules.
     def __init__(
             self,
-            N_STATES,
+            N_FEATURES,
             N_ACTIONS
     ):
         super(Net,self).__init__()
-        self.fc1 = nn.Linear(N_STATES, 50)
+        self.fc1 = nn.Linear(N_FEATURES, 50)
         self.fc1.weight.data.normal_(0, 0.1)   # initialization
         self.out = nn.Linear(50, N_ACTIONS)
         self.out.weight.data.normal_(0, 0.1)   # initialization
 
         '''perhapes another way：
         self.linear_relu_stack = nn.Sequential(
-            nn.Linear(N_STATES,50)
+            nn.Linear(N_FEATURES,50)
             nn.ReLU(),
             nn.Linear(50, N_ACTIONS)
         )
@@ -31,11 +31,11 @@ class Net(nn.Module): #nn.Module: Base class for all neural network modules.
         actions_value = self.out(x)
         return actions_value
 
-# DQN 基础版 （Experience Replay + Fixed Q target）
+# DQN base version （Experience Replay + Fixed Q target）
 class DQN(object):
     def __init__(
             self,
-            N_STATES,
+            N_FEATURES,
             N_ACTIONS,
             MEMORY_CAPACITY, 
             EPSILON, 
@@ -49,7 +49,7 @@ class DQN(object):
             device
     ):
         #pay attention not to use comma here, otherwise a tuple would be assigned
-        self.N_STATES=N_STATES
+        self.N_FEATURES=N_FEATURES
         self.N_ACTIONS=N_ACTIONS
         self.MEMORY_CAPACITY=MEMORY_CAPACITY
         self.EPSILON=EPSILON
@@ -63,15 +63,15 @@ class DQN(object):
         self.device=device
 
         
-        ##self.eval_net = Net(self.N_STATES,self.N_ACTIONS).to(device)
+        ##self.eval_net = Net(self.N_FEATURES,self.N_ACTIONS).to(device)
 
-        self.eval_net = Net(self.N_STATES,self.N_ACTIONS)
-        self.target_net = Net(self.N_STATES,self.N_ACTIONS)
+        self.eval_net = Net(self.N_FEATURES,self.N_ACTIONS).to(device)
+        self.target_net = Net(self.N_FEATURES,self.N_ACTIONS).to(device)
 
         self.learn_step_counter = 0                                     # for target updating
         self.memory_counter = 0                                         # for storing memory
         
-        self.memory = np.zeros((self.MEMORY_CAPACITY, self.N_STATES * 2 + 2))     # initialize memory
+        self.memory = np.zeros((self.MEMORY_CAPACITY, self.N_FEATURES * 2 + 2))     # initialize memory
 
         #define loss and optimizer
         #intro to adma optimizer：https://www.jianshu.com/p/aebcaf8af76e， https://cloud.tencent.com/developer/article/1771256
@@ -118,14 +118,14 @@ class DQN(object):
         # sample batch transitions
         sample_index = np.random.choice(self.MEMORY_CAPACITY, self.BATCH_SIZE) 
         b_memory = self.memory[sample_index, :]
-        b_s = torch.FloatTensor(b_memory[:, :self.N_STATES])
-        b_a = torch.LongTensor(b_memory[:, self.N_STATES:self.N_STATES+1].astype(int))
-        b_r = torch.FloatTensor(b_memory[:, self.N_STATES+1:self.N_STATES+2])
-        b_s_ = torch.FloatTensor(b_memory[:, -self.N_STATES:])
+        b_s = torch.FloatTensor(b_memory[:, :self.N_FEATURES])
+        b_a = torch.LongTensor(b_memory[:, self.N_FEATURES:self.N_FEATURES+1].astype(int))
+        b_r = torch.FloatTensor(b_memory[:, self.N_FEATURES+1:self.N_FEATURES+2])
+        b_s_ = torch.FloatTensor(b_memory[:, -self.N_FEATURES:])
 
         # q_eval w.r.t the action in experience
         q_eval = self.eval_net(b_s).gather(1, b_a)  # shape (batch, 1) 
-        #b_s:batchsize*N_STATES, eval_net(b_s):batchsize*N_ACTIONS, gather(dim=1,index=b_a)也就是挑选每一行的那个action
+        #b_s:batchsize*N_FEATURES, eval_net(b_s):batchsize*N_ACTIONS, gather(dim=1,index=b_a)也就是挑选每一行的那个action
         q_next = self.target_net(b_s_).detach()     # detach from graph, don't backpropagate
         q_target = b_r + self.GAMMA * q_next.max(1)[0].view(self.BATCH_SIZE, 1)   #（1，batch） reshape to (batch, 1) 
         # view 用于tensor纬度的重构，view(a,b)代表把tensor变成a*b的结构，view(-1)是变成一维，view(m,-1)代表变成m行，列数则自动匹配
@@ -159,7 +159,7 @@ class DQN(object):
         axis[1].set_xlabel('Episode')
         axis[1].grid() 
         axis[1].set_title("Reward curve")
-        plt.savefig(dirname+'/plot_cartpoleV0.png')
+        plt.savefig(dirname+'/plot_CartPole-V0.png')
         plt.show()
     
     def get_epsilon(self):

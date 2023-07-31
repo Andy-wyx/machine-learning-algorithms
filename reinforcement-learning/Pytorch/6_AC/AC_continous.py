@@ -24,6 +24,8 @@ class Actor_Net(nn.Module):
 		sigma = self.sigma(x)
 		sigma = F.softplus(sigma)
 
+		##why two output
+
 		return mu, sigma
 
 
