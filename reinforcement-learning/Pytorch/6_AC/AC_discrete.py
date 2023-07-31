@@ -12,7 +12,7 @@ np.random.seed(1)
 torch.manual_seed(1)
 
 ########################################## hyperparameters ################################################
-MAX_EPISODE = 150
+MAX_EPISODE = 500
 MAX_EP_STEPS = 3000   # maximum time steps in one episode
 RENDER = True   
 GAMMA = 0.9   # reward discount in TD error
@@ -42,9 +42,11 @@ class Net(nn.Module):
 
 
 	def forward(self, x):
-		x = self.l1(x)
+		#x = self.l1(x)
+		x=F.linear(x,self.l1.weight.clone(),self.l1.bias)
 		x = F.relu(x)
-		x = self.acts_prob(x)
+		#x = self.acts_prob(x)
+		x=F.linear(x,self.acts_prob.weight.clone(),self.acts_prob.bias)
 		if self.activate:
 			x = F.softmax(x)
 		return x
@@ -78,6 +80,9 @@ class Actor(object):
 		exp_v = torch.mean(log_prob * td)
 
 		loss = -exp_v
+		#When you call loss.backward(), all it does is compute gradient of loss w.r.t all the parameters in loss that have requires_grad = True 
+		# and store them in parameter.grad attribute for every parameter.
+		# optimizer.step() updates all the parameters based on parameter.grad
 		self.optimizer.zero_grad()
 		loss.backward()
 		self.optimizer.step()
@@ -94,6 +99,7 @@ class Critic(object):
 
 		self.cost=[]
 		self.reward=[]
+		self.actor_cost=[]
 
 
 	def _build_net(self):
@@ -109,40 +115,63 @@ class Critic(object):
 		loss = td_error ** 2
 
 		self.optimizer.zero_grad()
-		loss.backward(retain_graph=True) # in our updating process, critic network is updated before actor
-		#Both losses, critic_loss and actor_loss use the advantage tensor in their computation.
-		#The first critic_loss.backward() call will free the intermediate forward activations stored during the previous forward pass, which will cause actor_loss.backward() to fail since both backward passes depend on the computation graph (and the intermediate activations) attached to advantage.
-		#To solve the issue you could use actor_loss.backward(retain_graph=True) or, if it fits your use case, sum both losses together before calling .backward() on the sum.
+		loss.backward(retain_graph=True) 
+		'''in our updating process, critic network is updated before actor
+		Both losses, critic_loss and actor_loss use the 'advantage tensor' in their computation.
+		The first critic_loss.backward() call will free the intermediate forward activations stored during the previous forward pass, 
+		which will cause actor_loss.backward() to fail since both backward passes depend on the computation graph (and the intermediate activations) attached to advantage.
+		To solve the issue you could use actor_loss.backward(retain_graph=True) or, if it fits your use case, sum both losses together before calling .backward() on the sum.
+		However, retain the graph leads to new trouble of inplace operation for opimizer.step(). When retain_graph=fasle by default, the opimizer.step() uses inplace operation it'ok
+		cuz it will create new computation graph anyway, but when retain_graph=true, inplace operation of those parameters could be a problem. 
+		As analyzed and suggested by KFrank on this post https://discuss.pytorch.org/t/runtimeerror-one-of-the-variables-needed-for-gradient-computation-has-been-modified-by-an-inplace-operation-torch-floattensor-64-1-which-is-output-0-of-asstridedbackward0-is-at-version-3-expected-version-2-instead-hint-the-backtrace-further-a/171826/7
+		a solution is to clone related non-activation layers.
+		'''
 		self.optimizer.step()
 
 		return td_error
 	
 	def store_ep_reward(self,ep_r):
-		if len(self.reward)==0:
 			self.reward.append(ep_r)
-		else:
-			smoothed_reward=self.reward[-1]*0.95+ep_r*0.05
-			self.reward.append(smoothed_reward)
 
 	def store_ep_cost(self,l):
-		if len(self.cost)==0:
-			self.cost.append(l)
-		else:
-			l=self.cost[-1]*0.95+l*0.05 #smooth the curve
 			self.cost.append(l) 
+
+	def store_ep_actor_cost(self,l):
+		self.actor_cost.append(l)
 	
-	def plot(self,dirname):
-		figure, axis = plt.subplots(1, 2)
-		axis[0].plot(np.arange(len(self.cost)), self.cost , c='b')   
-		axis[0].set_ylabel('Critic_Cost')
-		axis[0].set_xlabel('Trainning steps')
-		axis[0].grid() 
-		axis[0].set_title("Cost curve")
-		axis[1].plot(np.arange(len(self.reward)), self.reward , c='b')   
-		axis[1].set_ylabel('Reward')
-		axis[1].set_xlabel('Episode')
-		axis[1].grid() 
-		axis[1].set_title("Reward curve")
+	def get_smoothed(self, original):
+		smoothed=[sum(original[e-9:e+1])/10 if e>9 else sum(original[:e+1])/(e+1) for e in range(len(original))]
+		return smoothed
+	
+	def plot(self,dirname,t):
+		figure, axis = plt.subplots(2, 2)
+		axis[0,0].plot(np.arange(len(self.cost)), self.cost , c='b' , label='original')   
+		axis[0,0].plot(np.arange(len(self.cost)), self.get_smoothed(self.cost), color='red', label='average of ten') 
+		axis[0,0].legend(loc='best') 
+		axis[0,0].set_ylabel('Td error of V in Value Network')
+		axis[0,0].set_xlabel('Trainning steps')
+		axis[0,0].grid() 
+		axis[0,0].set_title("Cost curve")
+		axis[0,1].plot(np.arange(len(self.actor_cost)), self.actor_cost , c='b' , label='original')   
+		axis[0,1].plot(np.arange(len(self.actor_cost)), self.get_smoothed(self.actor_cost), color='red', label='average of ten') 
+		axis[0,1].legend(loc='best') 
+		axis[0,1].set_ylabel('logPi*Td(V) in Policy Network')
+		axis[0,1].set_xlabel('Trainning steps')
+		axis[0,1].grid() 
+		axis[0,1].set_title("Cost curve")
+		axis[1,0].plot(np.arange(len(self.reward)), self.reward , c='b', label='original')   
+		axis[1,0].plot(np.arange(len(self.reward)), self.get_smoothed(self.reward), color='red', label='average of ten') 
+		axis[1,0].legend(loc='best') 
+		axis[1,0].set_ylabel('Reward')
+		axis[1,0].set_xlabel('Episode')
+		axis[1,0].grid() 
+		axis[1,0].set_title("Reward Curve")
+		axis[1,1].plot(np.arange(len(self.reward)), [t/len(self.reward) for i in range(len(self.reward))] , c='b')   
+		axis[1,1].set_ylabel('Average Time')
+		axis[1,1].set_xlabel('Episode')
+		axis[1,1].grid() 
+		axis[1,1].set_title("Average Time Per Ep")
+		figure.tight_layout()
 		plt.savefig(dirname+'/plot_CartPole-V0.png')
 		plt.show()
 
@@ -169,10 +198,12 @@ def run_CartPoleV0():
 			ep_r+=r
 
 			td_error = critic.learn(s, r, s_)  # gradient = grad[r + gamma * V(s_) - V(s)]
-			actor.learn(s, a, td_error)   # true_gradient = grad[logPi(s, a) * td_error]
+			td_actor_error=actor.learn(s, a, td_error)   # true_gradient = grad[logPi(s, a) * td_error]
 
-			#l=td_error.detach().numpy() ** 2
-			#critic.store_ep_cost(l ** 2)
+			l=float(td_error.detach().numpy()) # cannot numpy on tensor that require grad
+			l_actor=float(td_actor_error.detach().numpy())
+			critic.store_ep_cost(l)
+			critic.store_ep_actor_cost(l_actor)
 
 			#https://github.com/NVlabs/FUNIT/issues/23
 
@@ -187,9 +218,10 @@ def run_CartPoleV0():
                         '| Steps: ', str(t).rjust(4))
 				break
 
-	print('Total running time: ',round(time.time()-t1,2),'s')
+	t=round(time.time()-t1,2)
+	print('Total running time: ',t,'s')
 	dirname=os.path.dirname(__file__)
-	#critic.plot(dirname)
+	critic.plot(dirname, t)
 
 
 if __name__=='__main__':
