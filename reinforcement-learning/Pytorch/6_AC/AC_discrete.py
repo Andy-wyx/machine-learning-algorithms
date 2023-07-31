@@ -22,6 +22,7 @@ LR_C = 0.01   # learning rete for critic
 
 env = gym.make('CartPole-v0')
 env.seed(1)   # reproducible
+#torch.manual_seed(1)
 env = env.unwrapped
 
 
@@ -228,6 +229,11 @@ if __name__=='__main__':
 	actor = Actor(n_features=N_F, n_actions=N_A, lr=LR_A)
 	critic = Critic(n_features=N_F, lr=LR_C)   
 	run_CartPoleV0()
+	torch.save(actor.state_dict(), "Amodel.pth")
+	torch.save(critic.state_dict(), "Cmodel.pth")
+	print("Saved PyTorch Model State to model.pth")
+	#actor = Actor(n_features=N_F, n_actions=N_A, lr=LR_A)
+	#actor.load_state_dict(torch.load("Amodel.pth"))
 
 
 
