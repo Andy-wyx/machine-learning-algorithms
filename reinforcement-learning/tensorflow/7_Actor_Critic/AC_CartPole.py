@@ -116,12 +116,12 @@ class Critic(object): ##这个网络只有s一个输入，感觉不是特别合�
         with tf.variable_scope('squared_TD_error'):
             self.td_error = self.r + GAMMA * self.v_ - self.v
             # TD_error = (r+gamma*V_next) - V_eval 
-            # #是一个典型的TD error，没有用比较native的Q或者V或者Q‘-Q或者V'-V或者A，
+            # #是一个典型的TD error，没有用比较native的Q或者V或者Q‘-Q或者或者A，
             # 计算Advantage就需要Q-V 那么有几种计算方式，
             # 1.monte carlo REINFORCE method 来无偏估计Q,但是这又回到了policy gradient回合更新低效的弊端
             # 2.critic网络模拟A function，直接用计算出来的值就好了，这是一个不错的方法
             # 3.Q=E(r+V(s')),所以我们可以直接用r+V(s')-V(s)作为A=Q-V的无偏估计，这也是A2C中的用法
-            # 但是这里AC用的网络没有input a，所以还是属于V‘-V的td error版本，并不是A2C的版本
+            # 这里貌似就是A2C版本的写法
             self.loss = tf.square(self.td_error)    
         with tf.variable_scope('train'):
             self.train_op = tf.train.AdamOptimizer(lr).minimize(self.loss)

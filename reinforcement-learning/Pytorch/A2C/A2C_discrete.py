@@ -27,10 +27,10 @@ env = env.unwrapped
 N_F = env.observation_space.shape[0]
 N_A = env.action_space.n
 
-######################################## Native Actor-Critic Model ###########################################
+######################################## Advantage Actor-Critic Model ###########################################
 '''
-use loss: sigma[Pi*V] for updating policy network
-use loss: td error of V for updating value network. 
+use loss: sigma[Pi*(r+V'-V)] for updating policy network
+use loss: advantage for updating value network. r+V'-V. Q=E(r+V')=> A=Q-V can be estmiated by r+V'-V
 '''
 class Net(nn.Module):
 	def __init__(self, n_feature, n_hidden, n_output, activate=False):
@@ -74,11 +74,11 @@ class Actor(object):
 		return np.random.choice(np.arange(probs.shape[1]), p=probs.data.numpy().ravel())
 
 
-	def learn(self, s, a, v):
+	def learn(self, s, a, td):
 		s = torch.Tensor(s[np.newaxis, :])
 		acts_prob = self.actor_net(s)
 		log_prob = torch.log(acts_prob[0, a])
-		exp_v = torch.mean(log_prob * v)
+		exp_v = torch.mean(log_prob * td)
 
 		loss = -exp_v
 		#When you call loss.backward(), all it does is compute gradient of loss w.r.t all the parameters in loss that have requires_grad = True 
@@ -129,7 +129,7 @@ class Critic(object):
 		'''
 		self.optimizer.step()
 
-		return td_error,v
+		return td_error
 	
 def get_smoothed(original):
 	smoothed=[sum(original[e-9:e+1])/10 if e>9 else sum(original[:e+1])/(e+1) for e in range(len(original))]
@@ -147,7 +147,7 @@ def plot(dirname,actor,critic):
 	axis[0,1].plot(np.arange(len(actor.policy_cost)), actor.policy_cost , c='b' , label='original')   
 	axis[0,1].plot(np.arange(len(actor.policy_cost)), get_smoothed(actor.policy_cost), color='red', label='average of ten') 
 	axis[0,1].legend(loc='best') 
-	axis[0,1].set_ylabel('logPi*V in Policy Network')
+	axis[0,1].set_ylabel('logPi*Td(V) in Policy Network')
 	axis[0,1].set_xlabel('Trainning steps')
 	axis[0,1].grid() 
 	axis[0,1].set_title("Cost curve")
@@ -191,8 +191,8 @@ def run_CartPoleV0(actor,critic):
 
 			ep_r+=r
 
-			td_error,v = critic.learn(s, r, s_)  # gradient = grad[r + gamma * V(s_) - V(s)]
-			td_actor_error=actor.learn(s, a, v)   # true_gradient = grad[logPi(s, a) * td_error]
+			td_error= critic.learn(s, r, s_)  # gradient = grad[r + gamma * V(s_) - V(s)]
+			td_actor_error=actor.learn(s, a, td_error)   # true_gradient = grad[logPi(s, a) * td_error]
 
 			l=float(td_error.detach().numpy()) # cannot numpy on tensor that require grad
 			l_actor=float(td_actor_error.detach().numpy())
@@ -207,6 +207,7 @@ def run_CartPoleV0(actor,critic):
 
 			if done or t>=MAX_EP_STEPS:
 				critic.reward.append(ep_r)
+
 				print('Ep: ', str(i_episode).rjust(4),
                         '| Ep_r: ', str(round(ep_r, 2)).rjust(7),
                         '| Steps: ', str(t).rjust(4))
@@ -233,7 +234,3 @@ if __name__=='__main__':
 	#torch.save(actor.state_dict(), actor_model_path)
 	#torch.save(critic.state_dict(), critic_model_path)
 	#print("Saved PyTorch Natural AC Model State to actor_discrete.pth and critic_discrete.pth")
-
-
-
-

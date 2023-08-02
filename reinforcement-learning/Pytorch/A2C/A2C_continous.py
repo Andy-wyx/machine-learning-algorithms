@@ -25,7 +25,7 @@ env = env.unwrapped
 N_S = env.observation_space.shape[0]
 A_BOUND = env.action_space.high
 
-################################################ Model ######################################################
+################################################ A2C Model ######################################################
 class Actor_Net(nn.Module):
 	def __init__(self, n_features, n_hidden, n_outputs):
 		super(Actor_Net, self).__init__()
@@ -81,11 +81,11 @@ class Actor(object):
 		return self.action
 
 
-	def learn(self, s, a, v):
+	def learn(self, s, a, td):
 		normal_dist = self.normal_dist(s)
 		# log_prob get the probability of action a under the distribution of normal_dist,internally it will compute logarithm of pdf of normal distribution.
 		log_prob = normal_dist.log_prob(a)   
-		exp_v = log_prob * v.float()   # advantage (TD_error) guided loss
+		exp_v = log_prob * td.float()   # advantage (TD_error) guided loss
 		# Add cross entropy cost to encourage exploration. entropy() is an abstract method in super class distribution. It is implemented in each of the inherited distribution class such as normal
 		exp_v += 0.01*normal_dist.entropy()   
 		loss = -exp_v   # max(v) = min(-v)
@@ -140,7 +140,7 @@ class Critic(object):
 		loss.backward(retain_graph=True)
 		self.optimizer.step()
 
-		return td_error,v
+		return td_error
 	
 def plot(dirname,actor,critic):
 		figure, axis = plt.subplots(2, 2)
@@ -154,7 +154,7 @@ def plot(dirname,actor,critic):
 		axis[0,1].plot(np.arange(len(actor.policy_cost)), actor.policy_cost , c='b' , label='original')   
 		axis[0,1].plot(np.arange(len(actor.policy_cost)), get_smoothed(actor.policy_cost), color='red', label='average of ten') 
 		axis[0,1].legend(loc='best') 
-		axis[0,1].set_ylabel('logPi*V in Policy Network')
+		axis[0,1].set_ylabel('logPi*td(V) in Policy Network')
 		axis[0,1].set_xlabel('Trainning steps')
 		axis[0,1].grid() 
 		axis[0,1].set_title("Policy loss")
@@ -196,8 +196,8 @@ def run_PendulumV0(actor,critic):
 			r /= 10
 			r+=0.4
 
-			td_error ,v  = critic.learn(s, r, s_)   # gradient = grad[r + gamma * V(s_) - V(s)]
-			td_actor_error=actor.learn(s, a_tensor, v)   # gradient = grad[logPi(s, a) * V]
+			td_error  = critic.learn(s, r, s_)   # gradient = grad[r + gamma * V(s_) - V(s)]
+			td_actor_error=actor.learn(s, a_tensor, td_error)   # gradient = grad[logPi(s, a) * V]
 
 			l=float(td_error.detach().numpy()) # cannot numpy on tensor that require grad
 			l_actor=float(td_actor_error.detach().numpy())
@@ -236,4 +236,3 @@ if __name__=='__main__':
 	#torch.save(critic.state_dict(), critic_model_path)
 	#print("Saved PyTorch Natural AC Model State to actor_continous.pth and critic_continous.pth")
 
-	##这一节主要就是为什么用GaussDist，怎么计算，entropy函数的实现等

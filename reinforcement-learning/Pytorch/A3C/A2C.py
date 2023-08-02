@@ -134,7 +134,7 @@ while frame_idx < max_frames:
         
         if frame_idx % 100 == 0:
             test_rewards.append(np.mean([test_env() for _ in range(10)]))
-            plot(frame_idx, test_rewards)
+            #plot(frame_idx, test_rewards)
             
     next_state = torch.FloatTensor(next_state).to(device)
     _, next_value = model(next_state)

@@ -38,8 +38,9 @@ SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 ######################################## Native Actor-Critic Model ###########################################
 '''
 A natural AC implementation with the following loss standard:
-log[Pi*(r+V'-V)] as loss for updating policy network
-Td error of V as loss for updating value network. i.e. r+V'-V (there are many other loss options for implem Value Net)
+log[Pi*(V)] as loss for updating policy network
+Td error of V as loss for updating value network. i.e. r+V'-V 
+(there are many other loss options for implem Policy Net)
 Implement Actor and Critic into one single class makes the code simpler,  but may have to use the same learning rate 
 adding two losses together makes retain_graph=True unnecessary thus save our effort from fixing inplace operation as well. 
 '''
@@ -102,7 +103,7 @@ class ActorCriticNet(nn.Module):
 		value_loss = td_error ** 2
 
 		log_prob = torch.log(acts_prob[0, a])
-		exp_v = torch.mean(log_prob * td_error)  #true_gradient = grad[logPi(s, a) * td_error]
+		exp_v = torch.mean(log_prob * v)  #true_gradient = grad[logPi(s, a) * td_error]
 		policy_loss = -exp_v
 
 		entropy_loss = -BETA * sum((acts_prob * torch.log(acts_prob))[0])
@@ -126,7 +127,7 @@ class ActorCriticNet(nn.Module):
 		self.value_cost.append(value_loss)
 		self.total_cost.append(total_loss)
 
-	def plot(self,dirname,t):
+	def plot(self,dirname):
 		figure, axis = plt.subplots(2, 2)
 		axis[0,0].plot(np.arange(len(self.value_cost)), self.value_cost , c='b' , label='original')   
 		axis[0,0].plot(np.arange(len(self.value_cost)), get_smoothed(self.value_cost), color='red', label='average of ten') 
@@ -138,7 +139,7 @@ class ActorCriticNet(nn.Module):
 		axis[0,1].plot(np.arange(len(self.policy_cost)), self.policy_cost , c='b' , label='original')   
 		axis[0,1].plot(np.arange(len(self.policy_cost)), get_smoothed(self.policy_cost), color='red', label='average of ten') 
 		axis[0,1].legend(loc='best') 
-		axis[0,1].set_ylabel('logPi*Td(V) in Policy Network')
+		axis[0,1].set_ylabel('logPi*V in Policy Network')
 		axis[0,1].set_xlabel('Trainning steps')
 		axis[0,1].grid() 
 		axis[0,1].set_title("Policy loss")
@@ -151,6 +152,7 @@ class ActorCriticNet(nn.Module):
 		axis[1,0].set_title("Reward Curve")
 		axis[1,1].plot(np.arange(len(self.total_cost)), self.total_cost , c='b', label='original')   
 		axis[1,1].plot(np.arange(len(self.total_cost)), get_smoothed(self.total_cost), color='red', label='average of ten') 
+		axis[1,1].legend(loc='best') 
 		axis[1,1].set_ylabel('policy_loss+value_loss+entropy_loss')
 		axis[1,1].set_xlabel('Trainning steps')
 		axis[1,1].grid() 
@@ -206,7 +208,7 @@ def run_CartPoleV0(model):
 	t=round(time.time()-t1,2)
 	print('Total running time: ',t,'s','Avg Time Per Ep: ', t/MAX_EPISODE,'s')
 	dirname=os.path.dirname(__file__)
-	model.plot(dirname, t)
+	model.plot(dirname)
 
 
 if __name__=='__main__':
