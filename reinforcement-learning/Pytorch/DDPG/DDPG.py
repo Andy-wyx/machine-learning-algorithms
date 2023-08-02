@@ -12,11 +12,7 @@ import torch.optim as optim
 from torch.distributions import Normal
 from tensorboardX import SummaryWriter
 
-'''
-Implementation of Deep Deterministic Policy Gradients (DDPG) with pytorch 
-riginal paper: https://arxiv.org/abs/1509.02971
-Not the author's implementation !
-'''
+############################################################### Hyperparameters ############################################################
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--mode', default='train', type=str) # mode = 'train' or 'test'
@@ -37,7 +33,7 @@ parser.add_argument('--random_seed', default=9527, type=int)
 # optional parameters
 
 parser.add_argument('--sample_frequency', default=256, type=int)
-parser.add_argument('--render', default=False, type=bool) # show UI or not
+parser.add_argument('--render', default=False, type=bool) 
 parser.add_argument('--log_interval', default=50, type=int) #
 parser.add_argument('--load', default=False, type=bool) # load model
 parser.add_argument('--render_interval', default=100, type=int) # after render_interval, the env.render() will work
@@ -50,6 +46,7 @@ args = parser.parse_args()
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 script_name = os.path.basename(__file__)
+dir_name=os.path.dirname(__file__)
 env = gym.make(args.env_name).unwrapped
 
 if args.seed:
@@ -60,9 +57,11 @@ if args.seed:
 state_dim = env.observation_space.shape[0]
 action_dim = env.action_space.shape[0]
 max_action = float(env.action_space.high[0])
-min_Val = torch.tensor(1e-7).float().to(device) # min value
+min_Val = torch.tensor(1e-7).float().to(device) # min value, but haven't been used
 
-directory = './exp' + script_name + args.env_name +'./'
+directory = dir_name+'/exp' + script_name + args.env_name +'./'
+
+############################################################# DDPG Model ##################################################################
 
 class Replay_buffer():
     '''
@@ -186,6 +185,7 @@ class DDPG(object):
             self.actor_optimizer.step()
 
             # Update the frozen target models
+            # a little different from our implementation in pytorch-DQN and tensorflow DQN/DDPG. Instead of 100% copy per iters, progressive update is used here.
             for param, target_param in zip(self.critic.parameters(), self.critic_target.parameters()):
                 target_param.data.copy_(args.tau * param.data + (1 - args.tau) * target_param.data)
 
@@ -215,17 +215,17 @@ def main():
     if args.mode == 'test':
         agent.load()
         for i in range(args.test_iteration):
-            state = env.reset()
+            s = env.reset()
             for t in count():
-                action = agent.select_action(state)
-                next_state, reward, done, info = env.step(np.float32(action))
-                ep_r += reward
+                a = agent.select_action(s)
+                s_, r, done, info = env.step(np.float32(a))
+                ep_r += r
                 env.render()
                 if done or t >= args.max_length_of_trajectory:
-                    print("Ep_i \t{}, the ep_r is \t{:0.2f}, the step is \t{}".format(i, ep_r, t))
+                    print("Ep_i\t{:>2}, the ep_r is \t{:>9.2f}, the step is \t{:>4}".format(i, ep_r, t))
                     ep_r = 0
                     break
-                state = next_state
+                s = s_
 
     elif args.mode == 'train':
         print("====================================")
@@ -233,36 +233,38 @@ def main():
         print("====================================")
         if args.load: agent.load()
         for i in range(args.max_episode):
-            state = env.reset()
+            s = env.reset()
             for t in count():
-                action = agent.select_action(state)
+                a = agent.select_action(s)
 
-                # issue 3 add noise to action
-                action = (action + np.random.normal(0, args.exploration_noise, size=env.action_space.shape[0])).clip(
+                # add noise to action
+                #np.random.normal(mean, std, shape) size=1
+                a = (a + np.random.normal(0, args.exploration_noise, size=env.action_space.shape[0])).clip(
                     env.action_space.low, env.action_space.high)
 
-                next_state, reward, done, info = env.step(action)
-                ep_r += reward
+                s_, r, done, info = env.step(a)
+                ep_r += r
                 if args.render and i >= args.render_interval : env.render()
-                agent.replay_buffer.push((state, next_state, action, reward, np.float(done)))
+                agent.replay_buffer.push((s, s_, a, r, np.float(done)))
                 # if (i+1) % 10 == 0:
                 #     print('Episode {},  The memory size is {} '.format(i, len(agent.replay_buffer.storage)))
 
-                state = next_state
+                s= s_
                 if done or t >= args.max_length_of_trajectory:
                     agent.writer.add_scalar('ep_r', ep_r, global_step=i)
                     if i % args.print_log == 0:
-                        print("Ep_i \t{}, the ep_r is \t{:0.2f}, the step is \t{}".format(i, ep_r, t))
+                        print("Ep_i\t{:>6},|ep_r:\t{:>9.2f},|step:\t{:>4}".format(i,ep_r,t))
                     ep_r = 0
                     break
 
             if i % args.log_interval == 0:
                 agent.save()
+            # once the memory buffer is full , start trainning
             if len(agent.replay_buffer.storage) >= args.capacity-1:
-                agent.update()
+                agent.update() 
 
     else:
-        raise NameError("mode wrong!!!")
+        raise NameError("mode wrong!")
 
 if __name__ == '__main__':
     main()

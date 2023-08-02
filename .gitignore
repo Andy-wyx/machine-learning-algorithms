@@ -1,7 +1,8 @@
 # dataset
 **/data
 # saved model
-#*.pth
+*.pth
+*.local
 #Mac-specific finder information
 .DS_store
 # log/log for tensorboard
