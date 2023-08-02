@@ -166,7 +166,7 @@ def plot(dirname,actor,critic):
 	axis[1,1].grid() 
 	axis[1,1].set_title("Average Time Per Ep")
 	figure.tight_layout()
-	plt.savefig(dirname+'/AC_v0_CartPole-V0.png')
+	plt.savefig(dirname+'/A2C_v0_CartPole-V0.png')
 	plt.show()
 
 

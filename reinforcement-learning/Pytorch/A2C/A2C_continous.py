@@ -173,7 +173,7 @@ def plot(dirname,actor,critic):
 		axis[1,1].grid() 
 		axis[1,1].set_title("Total Cost")
 		figure.tight_layout()
-		plt.savefig(dirname+'/AC_Continous_Pendulum-V0.png')
+		plt.savefig(dirname+'/A2C_Continous_Pendulum-V0.png')
 		plt.show()
 
 def get_smoothed(original):
