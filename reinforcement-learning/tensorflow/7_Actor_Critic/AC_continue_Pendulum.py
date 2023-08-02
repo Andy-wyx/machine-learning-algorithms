@@ -162,6 +162,7 @@ for i_episode in range(MAX_EPISODE):
         env.render()
         a = actor.choose_action(s)
 
+        print(a,type(a),type(a[0]))
         s_, r, done, info = env.step(a)
         r /= 10
 

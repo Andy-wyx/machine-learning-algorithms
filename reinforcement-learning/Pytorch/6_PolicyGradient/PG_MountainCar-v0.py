@@ -132,12 +132,12 @@ def main():
                 break
 
         finish_episode()
-        plot(run_steps)
+        #plot(run_steps)
 
         if i_episode % 100 == 0 and i_episode !=0:
 
             modelPath = './AC_MountainCar-v0_Model/ModelTraing' + str(i_episode) + 'Times.pkl'
-            torch.save(policy, modelPath)
+            #torch.save(policy, modelPath)
 
 
 

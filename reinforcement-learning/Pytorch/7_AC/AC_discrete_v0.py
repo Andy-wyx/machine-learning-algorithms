@@ -6,10 +6,6 @@ import torch.nn.functional as F
 import time
 import os
 import matplotlib.pyplot as plt
-torch.autograd.set_detect_anomaly(True)
-
-np.random.seed(1)
-torch.manual_seed(1)
 
 ########################################## hyperparameters ################################################
 MAX_EPISODE = 500
@@ -19,7 +15,9 @@ GAMMA = 0.9   # reward discount in TD error
 LR_A = 0.005   # learning rate for actor
 LR_C = 0.01   # learning rete for critic
 
-
+###########################################  parameters  #################################################
+np.random.seed(1)
+torch.manual_seed(1)
 env = gym.make('CartPole-v0')
 env.seed(1)   # reproducible
 #torch.manual_seed(1)
@@ -173,7 +171,7 @@ class Critic(object):
 		axis[1,1].grid() 
 		axis[1,1].set_title("Average Time Per Ep")
 		figure.tight_layout()
-		plt.savefig(dirname+'/plot_CartPole-V0.png')
+		plt.savefig(dirname+'/AC_v0_CartPole-V0.png')
 		plt.show()
 
 

@@ -11,20 +11,24 @@ import matplotlib.pyplot as plt
 
 ########################################## hyperparameters ################################################
 
-MAX_EPISODE = 150
+MAX_EPISODE = 3000
 MAX_EP_STEPS = 3000   # maximum time steps in one episode
 RENDER = True   
 GAMMA = 0.9   # reward discount in TD error
+BETA=0.05     # Hyperparameter that controls the influence of entropy loss
 #LR_A = 0.005   # learning rate for actor
 #LR_C = 0.01   # learning rate for critic
-LR = 0.01
+LR = 0.003
+PUNISHMENT=10 
+
+###########################################   parameters   ###################################################
 
 env = gym.make('CartPole-v0')
 env = env.unwrapped
 
-np.random.seed(1)
-torch.manual_seed(1)
-env.seed(1)   # reproducible
+#np.random.seed(1)
+#torch.manual_seed(1)
+#env.seed(1)   # reproducible
 
 N_F = env.observation_space.shape[0]
 N_A = env.action_space.n
@@ -36,7 +40,8 @@ SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 A natural AC implementation with the following loss standard:
 log[Pi*(r+V'-V)] as loss for updating policy network
 Td error of V as loss for updating value network. i.e. r+V'-V (there are many other loss options for implem Value Net)
-Implement Actor and Critic into one single class makes the code simpler,  but may have to use the same learning rate
+Implement Actor and Critic into one single class makes the code simpler,  but may have to use the same learning rate 
+adding two losses together makes retain_graph=True unnecessary thus save our effort from fixing inplace operation as well. 
 '''
 class ActorCriticNet(nn.Module):
 	def __init__(self, n_features, n_actions, n_hidden=32):
@@ -60,17 +65,16 @@ class ActorCriticNet(nn.Module):
 		self.policy_cost=[]
 		self.reward=[]
 		self.value_cost=[]
-		self.save_actions=[]
+		self.total_cost=[]
 
 	def forward(self, x):
-		#replace x=self.f1(x)to fix inplace operation error
-		x = F.linear(x,self.fc1.weight.clone(),self.fc1.bias)
+		x = self.fc1(x)
 		x = F.relu(x)
-		acts_prob = F.linear(x,self.actor.weight.clone(),self.actor.bias)
+		acts_prob = self.actor(x)
 		policy = F.softmax(acts_prob,dim=-1) 
 		#m*n*k,dim=-1 or 2 means numbers on the third dimension sums to 1. (same row)
 		#dim=0, numbers on the same position across the first dimension sums to 1, dim=1, the 2nd dim sums to one (same column)
-		value = F.linear(x,self.critic.weight.clone(),self.critic.bias)
+		value = self.critic(x)
 		return policy, value
 	
 	def choose_action(self,state):
@@ -86,7 +90,6 @@ class ActorCriticNet(nn.Module):
 		probs, state_value= self(state)
 		m=Categorical(probs)
 		action=m.sample()
-		self.save_actions.append(SavedAction(m.log_prob(action),state_value))
 		
 		return int(action.item()) ## the returned value is indeed an index of action, but hold by a tensor e.g. tensor(3) 
 	
@@ -96,38 +99,32 @@ class ActorCriticNet(nn.Module):
 		_,v_ = self(s_)
 		#critic network only take s as input, so update criterion is based on td error of state value, not advantage.
 		td_error = r + GAMMA * v_ - v   # gradient = grad[r + gamma * V(s_) - V(s)]
-		loss = td_error ** 2
+		value_loss = td_error ** 2
 
-		#critic update
-		self.optimizer.zero_grad()
-		loss.backward(retain_graph=True) 
-		'''in our updating process, critic network is updated before actor
-		Both losses, critic_loss and actor_loss use the 'advantage tensor' in their computation.
-		The first critic_loss.backward() call will free the intermediate forward activations stored during the previous forward pass, 
-		which will cause actor_loss.backward() to fail since both backward passes depend on the computation graph (and the intermediate activations) attached to advantage.
-		To solve the issue you could use actor_loss.backward(retain_graph=True) or, if it fits your use case, sum both losses together before calling .backward() on the sum.
-		However, retain the graph leads to new trouble of inplace operation for opimizer.step(). When retain_graph=fasle by default, the opimizer.step() uses inplace operation it'ok
-		cuz it will create new computation graph anyway, but when retain_graph=true, inplace operation of those parameters could be a problem. 
-		As analyzed and suggested by KFrank on this post https://discuss.pytorch.org/t/runtimeerror-one-of-the-variables-needed-for-gradient-computation-has-been-modified-by-an-inplace-operation-torch-floattensor-64-1-which-is-output-0-of-asstridedbackward0-is-at-version-3-expected-version-2-instead-hint-the-backtrace-further-a/171826/7
-		a solution is to clone related non-activation layers.
-		'''
-		self.optimizer.step()
-		
-		#actor update
 		log_prob = torch.log(acts_prob[0, a])
 		exp_v = torch.mean(log_prob * td_error)  #true_gradient = grad[logPi(s, a) * td_error]
-		loss = -exp_v
+		policy_loss = -exp_v
+
+		entropy_loss = -BETA * sum((acts_prob * torch.log(acts_prob))[0])
+
 		#When you call loss.backward(), all it does is compute gradient of loss w.r.t all the parameters in loss that have requires_grad = True 
 		# and store them in parameter.grad attribute for every parameter.
 		# optimizer.step() updates all the parameters based on parameter.grad
+		#when pdf is not spreaded out, p*logP is close to 0, means go ahead to update strongly when you are confident enough about choosing action, 
+		#when the prob of each action is close to each other, entropy_loss is negative and have a large abs value, means don't step too far, update cautiously
+		# the introduction of entropy helps with avoiding stucking into local minima  and helps encourage exploration.
+		loss=value_loss+policy_loss+entropy_loss 
+		
 		self.optimizer.zero_grad()
 		loss.backward()
 		self.optimizer.step()
 		
-		policy_cost=float(exp_v.detach().numpy()) # cannot numpy on tensor that require grad
-		value_cost=float(td_error.detach().numpy())
-		self.policy_cost.append(policy_cost)
-		self.value_cost.append(value_cost)
+		policy_loss=float(policy_loss.detach().numpy()) # cannot numpy on tensor that require grad
+		value_loss=float(value_loss.detach().numpy())
+		total_loss=float(loss.detach().numpy())
+		self.policy_cost.append(policy_loss)
+		self.value_cost.append(value_loss)
+		self.total_cost.append(total_loss)
 
 	def plot(self,dirname,t):
 		figure, axis = plt.subplots(2, 2)
@@ -137,14 +134,14 @@ class ActorCriticNet(nn.Module):
 		axis[0,0].set_ylabel('Td error of V in Value Network')
 		axis[0,0].set_xlabel('Trainning steps')
 		axis[0,0].grid() 
-		axis[0,0].set_title("Cost curve")
+		axis[0,0].set_title("Value loss")
 		axis[0,1].plot(np.arange(len(self.policy_cost)), self.policy_cost , c='b' , label='original')   
 		axis[0,1].plot(np.arange(len(self.policy_cost)), get_smoothed(self.policy_cost), color='red', label='average of ten') 
 		axis[0,1].legend(loc='best') 
 		axis[0,1].set_ylabel('logPi*Td(V) in Policy Network')
 		axis[0,1].set_xlabel('Trainning steps')
 		axis[0,1].grid() 
-		axis[0,1].set_title("Cost curve")
+		axis[0,1].set_title("Policy loss")
 		axis[1,0].plot(np.arange(len(self.reward)), self.reward , c='b', label='original')   
 		axis[1,0].plot(np.arange(len(self.reward)), get_smoothed(self.reward), color='red', label='average of ten') 
 		axis[1,0].legend(loc='best') 
@@ -152,13 +149,14 @@ class ActorCriticNet(nn.Module):
 		axis[1,0].set_xlabel('Episode')
 		axis[1,0].grid() 
 		axis[1,0].set_title("Reward Curve")
-		axis[1,1].plot(np.arange(len(self.reward)), [t/len(self.reward) for i in range(len(self.reward))] , c='b')   
-		axis[1,1].set_ylabel('Average Time')
-		axis[1,1].set_xlabel('Episode')
+		axis[1,1].plot(np.arange(len(self.total_cost)), self.total_cost , c='b', label='original')   
+		axis[1,1].plot(np.arange(len(self.total_cost)), get_smoothed(self.total_cost), color='red', label='average of ten') 
+		axis[1,1].set_ylabel('policy_loss+value_loss+entropy_loss')
+		axis[1,1].set_xlabel('Trainning steps')
 		axis[1,1].grid() 
-		axis[1,1].set_title("Average Time Per Ep")
+		axis[1,1].set_title("Total Cost")
 		figure.tight_layout()
-		plt.savefig(dirname+'/AC_CartPole-V0.png')
+		plt.savefig(dirname+'/AC_v1_CartPole-V0.png')
 		plt.show()
 
 
@@ -182,7 +180,12 @@ def run_CartPoleV0(model):
 
 			s_, r, done, info = env.step(a)
 
-			if done: r = -20   ##
+			x, x_dot, theta, theta_dot = s_
+			r1 = (env.x_threshold - abs(x)) / env.x_threshold - 0.8 
+			r2 = (env.theta_threshold_radians - abs(theta)) / env.theta_threshold_radians - 0.5
+			r = r1 + r2
+
+			if done: r = -PUNISHMENT   
 
 			ep_r+=r
 		
@@ -201,17 +204,19 @@ def run_CartPoleV0(model):
 				break
 
 	t=round(time.time()-t1,2)
-	print('Total running time: ',t,'s')
+	print('Total running time: ',t,'s','Avg Time Per Ep: ', t/MAX_EPISODE,'s')
 	dirname=os.path.dirname(__file__)
 	model.plot(dirname, t)
 
 
 if __name__=='__main__':
 	AC=ActorCriticNet(n_features=N_F, n_actions=N_A)
-	run_CartPoleV0(model=AC)
-	torch.save(AC.state_dict(), "model.pth")
-	print("Saved PyTorch Model State to model.pth")
-	# AC= ActorCriticNet(n_features=N_F, n_actions=N_A, lr=LR_A)
-	#AC.load_state_dict(torch.load("model.pth"))
+	dir_path=os.path.dirname(__file__)
+	model_path=dir_path+'/AC.pth'
+	if os.path.exists(model_path):
+		AC.load_state_dict(torch.load(model_path))
+		print("AC.pth Loaded.")
 
-	##和另一版本再对比一下取其精华，然后去做continous的，然后A2C,DDPG,A3C,CNN,PPO,EA,TD3,LSTM,写实验，
+	run_CartPoleV0(model=AC)
+	#torch.save(AC.state_dict(), model_path)
+	#print("Saved PyTorch Natural AC Model State to AC.pth")
