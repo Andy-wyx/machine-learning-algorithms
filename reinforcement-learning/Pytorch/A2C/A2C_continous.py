@@ -63,7 +63,8 @@ class Actor(object):
 
 	#in this env with continous action space we use normal distribution to sample our real choice, 
 	# the actor network is to provide the best mu and sigma for our normal distribution.
-	## why normal distribution
+	## why normal distribution, one good thing is by using such a distribution, it would be easy to get the log prob for the action you chose (e.g. by normal_dist.log_prob(action))
+    # basically we need the pdf here, but is there a way to extend the distribution to generalized forms, not limited to normal dist. probably no. since it's data-driven. you can hardly train thousands of pdf.
 	def normal_dist(self, s):
 		s = torch.Tensor(s[np.newaxis, :])
 		mu, sigma = self.actor_net(s)
