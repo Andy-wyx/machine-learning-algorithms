@@ -1,3 +1,5 @@
+#pdf papers
+*.pdf
 # dataset
 **/data
 # saved model
