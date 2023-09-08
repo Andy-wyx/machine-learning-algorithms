@@ -44,6 +44,8 @@ Try to follow this [installation guide](https://spinningup.openai.com/en/latest/
 * [MorvanZhou/Reinforcement-learning-with-tensorflow](https://github.com/MorvanZhou)
 * [nidao_my/Deep-reinforcement-learning-with-pytorch](https://gitee.com/nidao/Deep-reinforcement-learning-with-pytorch#actor-critic)
 
+### Experiments
+* [Gymnasium](https://gymnasium.farama.org/environments/atari/complete_list/)
 ### Papers
 * [Playing Atari with Deep Reinforcement Learning](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf)
 * ......
