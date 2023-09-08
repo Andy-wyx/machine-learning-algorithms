@@ -16,8 +16,8 @@ Try to follow this [installation guide](https://spinningup.openai.com/en/latest/
 
 ## TBD
 ### Algorithms
-* LSTM
-* rainbow dqn
+* LSTM (on an env e.g. Adventure Atari game)
+* [rainbow dqn](https://zhuanlan.zhihu.com/p/261322143)
 * more implementation of Evolutionary Algorihms (EA) i.e. Genetic Algorithm and Evolution Strategy
 * PPO
 * distributed learning in RL (parallel or asynchronous)
@@ -26,21 +26,26 @@ Try to follow this [installation guide](https://spinningup.openai.com/en/latest/
 * frameskipp
 * some reward engineering
 * NAS: Network Architecture Search
-### Others
-* Encapsulate the flappy bird env (you can even try to publish it onto the Gymnasium) 
-* add save & load 
-* enable human mode
+### Others 
+* save & load & plotting 
 * enable GPU mode
 * enable CPU/GPU utilization monitoring
 
 ## Reference
 ### Tutorials
 * [OpenAI Spinning Up](https://spinningup.openai.com/en/latest/user/introduction.html)
+* [Youtube Shusen Wang](https://www.youtube.com/c/ShusenWangEng) or [Youtube 王树森]（https://www.youtube.com/@ShusenWang）
+* [Morvan Python](https://mofanpy.com/)
+* [Hugging face](https://huggingface.co/)
+* [floodsung/Deep-Learning-Papers-Reading-Roadmap](https://github.com/floodsung/Deep-Learning-Papers-Reading-Roadmap)
+* [Comparison of variants of AC](https://juejin.cn/post/7188697390054899749) and [AC,A3C,DDPG](https://zhuanlan.zhihu.com/p/580204440)
+* [入门Pytorch](https://www.zhihu.com/question/55720139) and [Pytorch Quickstart](https://pytorch.org/tutorials/beginner/basics/quickstart_tutorial.html)
+
+### Code
+* [MorvanZhou/Reinforcement-learning-with-tensorflow](https://github.com/MorvanZhou)
+* [nidao_my/Deep-reinforcement-learning-with-pytorch](https://gitee.com/nidao/Deep-reinforcement-learning-with-pytorch#actor-critic)
 
 ### Papers
 * [Playing Atari with Deep Reinforcement Learning](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf)
 
-## Disclaimer
-The work is based on the repo [uvipen/Flappy-bird-deep-Q-learning-pytorch](https://github.com/uvipen/Flappy-bird-deep-Q-learning-pytorch). 
 
-There are many repos about flappy bird agents or some other atari games, you might find some of them useful as well:
