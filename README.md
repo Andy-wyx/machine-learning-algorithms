@@ -34,7 +34,7 @@ Try to follow this [installation guide](https://spinningup.openai.com/en/latest/
 ## Reference
 ### Tutorials
 * [OpenAI Spinning Up](https://spinningup.openai.com/en/latest/user/introduction.html)
-* [Youtube Shusen Wang](https://www.youtube.com/c/ShusenWangEng) or [Youtube 王树森]（https://www.youtube.com/@ShusenWang）
+* [Youtube Shusen Wang](https://www.youtube.com/c/ShusenWangEng) or [Youtube 王树森](https://www.youtube.com/@ShusenWang)
 * [Morvan Python](https://mofanpy.com/)
 * [Hugging face](https://huggingface.co/)
 * [floodsung/Deep-Learning-Papers-Reading-Roadmap](https://github.com/floodsung/Deep-Learning-Papers-Reading-Roadmap)
