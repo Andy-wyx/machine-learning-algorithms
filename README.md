@@ -19,7 +19,6 @@ Try to follow this [installation guide](https://spinningup.openai.com/en/latest/
 * LSTM (on an env e.g. Adventure Atari game)
 * [rainbow dqn](https://zhuanlan.zhihu.com/p/261322143)
 * more implementation of Evolutionary Algorihms (EA) i.e. Genetic Algorithm and Evolution Strategy
-* PPO
 * distributed learning in RL (parallel or asynchronous)
 ### Trainning the model
 * a better CNN， maxpooling ...
@@ -47,5 +46,6 @@ Try to follow this [installation guide](https://spinningup.openai.com/en/latest/
 
 ### Papers
 * [Playing Atari with Deep Reinforcement Learning](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf)
+* ......
 
 
